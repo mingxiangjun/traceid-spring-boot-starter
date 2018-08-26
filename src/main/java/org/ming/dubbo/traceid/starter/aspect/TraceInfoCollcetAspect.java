@@ -38,17 +38,19 @@ public class TraceInfoCollcetAspect {
             // 服务提供方
             if (StringUtils.isEmpty(traceId) && context.getAttachment(TRACE_ID_KEY) == null) {
                 traceId = UUID.randomUUID().toString().replaceAll("-", "");
+            } else {
+                traceId = context.getAttachment(TRACE_ID_KEY);
             }
             // 服务提供方，从attachment中获取调用方AppName
             String appName = context.getAttachment(APP_NAME_KEY);
-            traceId += appName;
+            traceId = traceId.toString() + appName;
             MDC.put(TRACE_ID_KEY, traceId);
+            ThreadContext.put(TRACE_ID_KEY, traceId.toString());
         } else if (context.isConsumerSide()) {
             log.info("<<<<<<collect rpc info from consumer<<<<<<<<=============");
             // 如果traceId 不存在，则生成一个32位uuid
             if (StringUtils.isEmpty(traceId)) {
                 traceId = UUID.randomUUID().toString().replaceAll("-", "");
-
             }
             // 服务消费方
             if (!StringUtils.isEmpty(context.getAttachment(APP_NAME_KEY))) {
@@ -59,14 +61,15 @@ public class TraceInfoCollcetAspect {
             String application = rpcUrl!=null?rpcUrl.getParameter("application"):"empty application";
             context.setAttachment(APP_NAME_KEY, application);
             context.setAttachment(TRACE_ID_KEY, traceId.toString());
-            traceId += application;
+            traceId = traceId.toString() + application;
             MDC.put(TRACE_ID_KEY, traceId);
+            ThreadContext.put(TRACE_ID_KEY, traceId.toString());
         }
         // 正式调用方法
         Object result = proceedingJoinPoint.proceed();
         // 方法调用完成后清除MDC
         MDC.clear();
-
+        ThreadContext.clearAll();
         return result;
     }
 }
