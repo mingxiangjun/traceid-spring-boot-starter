@@ -19,7 +19,6 @@ public class TraceInfoAutoConfigure {
     @Bean
     @ConditionalOnClass(RpcContext.class)
     @ConditionalOnMissingBean(value = TraceInfoCollcetAspect.class)
-//    @ConditionalOnProperty(prefix = "dubbo",name = "basepackage")
     TraceInfoCollcetAspect traceInfoCollcetAspect() {
         return new TraceInfoCollcetAspect();
     }

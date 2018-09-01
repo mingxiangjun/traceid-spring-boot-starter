@@ -8,21 +8,17 @@
     <artifactId>traceid-spring-boot-starter</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-    <parent>
-        <groupId>org.springframework.boot</groupId>
-        <artifactId>spring-boot-starter-parent</artifactId>
-        <version>1.5.9.RELEASE</version>
-        <relativePath></relativePath>
-    </parent>
-
     <dependencies>
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-autoconfigure</artifactId>
+            <version>1.5.9.RELEASE</version>
+            <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-aop</artifactId>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <version>1.8.13</version>
         </dependency>
         <dependency>
             <groupId>com.alibaba</groupId>
@@ -40,4 +36,52 @@
             <version>1.5.9.RELEASE</version>
         </dependency>
     </dependencies>
+    <build>
+        <plugins>
+            <!-- JAVA DOC -->
+            <!--<plugin>-->
+                <!--<groupId>org.apache.maven.plugins</groupId>-->
+                <!--<artifactId>maven-javadoc-plugin</artifactId>-->
+                <!--<version>2.10.4</version>-->
+                <!--<configuration>-->
+                    <!--<encoding>UTF-8</encoding>-->
+                    <!--<aggregate>true</aggregate>-->
+                    <!--<charset>UTF-8</charset>-->
+                    <!--<docencoding>UTF-8</docencoding>-->
+                <!--</configuration>-->
+                <!--<executions>-->
+                    <!--<execution>-->
+                        <!--<id>attach-javadocs</id>-->
+                        <!--<goals>-->
+                            <!--<goal>jar</goal>-->
+                        <!--</goals>-->
+                    <!--</execution>-->
+                <!--</executions>-->
+            <!--</plugin>-->
+            <!-- JAVA 源码打包 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.0.1</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- 指定jdk版本 -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.7.0</version>
+                <configuration>
+                    <source>1.8</source>
+                    <target>1.8</target>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 </project>

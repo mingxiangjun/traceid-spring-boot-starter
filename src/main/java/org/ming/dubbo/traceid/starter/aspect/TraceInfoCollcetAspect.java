@@ -30,42 +30,18 @@ public class TraceInfoCollcetAspect {
     private static final String APP_NAME_KEY = "appName";
     private static final String UNKNOWN_KEY = "unknown";
 
-    @Around(value = "execution(* *..*ServiceImpl.*(..)) or execution(* *..*Controller.*(..))")
+    @Around(value = "execution(* *..*ServiceImpl.*(..)) || execution(* *..*Controller.*(..))")
     public Object collectTraceInfo(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
         RpcContext context = RpcContext.getContext();
 
         // 获取traceId
         Object traceId = getTraceId(context);
+        context.setAttachment(TRACE_ID_KEY, traceId.toString());
+        ThreadContext.put(TRACE_ID_KEY, traceId.toString());
 
-        if (context.isProviderSide()) {
-            // 服务提供方
-            log.info("==============>>>>>collect rpc info from provider>>>>>>>");
-            // 从attachment中获取调用方AppName
-            String appName = context.getAttachment(APP_NAME_KEY);
-            appName = StringUtils.isEmpty(appName)?UNKNOWN_KEY:appName;
-            ThreadContext.put(TRACE_ID_KEY, traceId.toString());
-            ThreadContext.put(APP_NAME_KEY,appName);
-            log.info("remote application:{} call local dubbo method {}",appName,context.getMethodName());
-        } else if (context.isConsumerSide()) {
-            log.info("<<<<<<collect rpc info from consumer<<<<<<<<=============");
-            // 服务消费方
-            if (!StringUtils.isEmpty(context.getAttachment(APP_NAME_KEY))) {
-                throw new TraceInfoCollectException("RpcContext Attachment get the same key：appName.you must define a new key in your application");
-            }
-            // 服务消费方，从url中获取本地appName，并放入rpcContext
-            URL rpcUrl = context.getUrl();
-            String application = rpcUrl!=null?rpcUrl.getParameter("application"): UNKNOWN_KEY;
-            context.setAttachment(APP_NAME_KEY, application);
-            context.setAttachment(TRACE_ID_KEY, traceId.toString());
-            ThreadContext.put(TRACE_ID_KEY, traceId.toString());
-            ThreadContext.put(APP_NAME_KEY,application);
-            log.info("call remote dubbo method {}",context.getMethodName());
-        } else {
-            // 找不到dubbo服务上下文
-            context.setAttachment(TRACE_ID_KEY,traceId.toString());
-            ThreadContext.put(TRACE_ID_KEY, traceId.toString());
-            log.info("call method {}",context.getMethodName());
-        }
+        String appName = getAppName(context);
+        ThreadContext.put(APP_NAME_KEY,appName);
+        context.setAttachment(APP_NAME_KEY,appName);
 
         // 正式调用方法
         long startTime = System.currentTimeMillis();
@@ -76,6 +52,28 @@ public class TraceInfoCollcetAspect {
         // 方法调用完成后清除ThreadContext
         ThreadContext.clearAll();
         return result;
+    }
+
+    /**
+     * 获取dubbo调用接口的application：
+     *  获取从MDC中集成来的appName，然后添加dubbo调用中的服务名
+     * @param context
+     * @return
+     */
+    private String getAppName(RpcContext context) {
+        if (context.getUrl() != null && context.isProviderSide()) {
+            log.info("==============>>>>>collect rpc info from provider>>>>>>>");
+        } else if (context.getUrl() != null && context.isConsumerSide()) {
+            log.info("<<<<<<collect rpc info from consumer<<<<<<<<=============");
+        }
+        // 服务消费方，从url中获取本地appName，并放入rpcContext
+        String appName = context.getAttachment(APP_NAME_KEY);
+        URL rpcUrl = context.getUrl();
+        String application = rpcUrl!=null?rpcUrl.getParameter("application"): UNKNOWN_KEY;
+        if (!StringUtils.isEmpty(appName)){
+            application += ">>" +appName;
+        }
+        return application;
     }
 
     /**
