@@ -27,7 +27,6 @@ public class TraceInfoCollcetAspect {
      */
     private static final String TRACE_ID_KEY = "requestId";
     private static final String APP_NAME_KEY = "appName";
-    private static final String UNKNOWN_KEY = "unknown";
 
     @Around(value = "execution(* *..*ServiceImpl.*(..)) || execution(* *..*Controller.*(..))")
     public Object collectTraceInfo(ProceedingJoinPoint proceedingJoinPoint) throws Throwable {
@@ -68,9 +67,11 @@ public class TraceInfoCollcetAspect {
         // 服务消费方，从url中获取本地appName，并放入rpcContext
         String appName = context.getAttachment(APP_NAME_KEY);
         URL rpcUrl = context.getUrl();
-        String application = rpcUrl!=null?rpcUrl.getParameter("application"): UNKNOWN_KEY;
-        if (!StringUtils.isEmpty(appName)){
+        String application = rpcUrl!=null?rpcUrl.getParameter("application"): "";
+        if (!StringUtils.isEmpty(appName) && !StringUtils.isEmpty(application)){
             application += ">>" +appName;
+        }else{
+            application = StringUtils.isEmpty(appName)?application:appName;
         }
         return application;
     }
