@@ -6,14 +6,18 @@ import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.reflect.MethodSignature;
+import org.ming.dubbo.traceid.starter.config.TraceInfoConfig;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
+import javax.annotation.Resource;
 import javax.servlet.http.HttpServletRequest;
 import java.lang.reflect.Method;
+import java.util.UUID;
 
 /**
  * rest接口类信息收集：
@@ -25,6 +29,9 @@ import java.lang.reflect.Method;
 @Aspect
 @Log4j2
 public class ControllerTraceInfoCollectAspect {
+    @Resource
+    TraceInfoConfig config;
+    private static final String TRACE_ID_KEY = "requestId";
     private static final String FILTER_NAME_KEY = "filter";
     /**
      * 是否清除对应的rpc信息
@@ -32,9 +39,34 @@ public class ControllerTraceInfoCollectAspect {
     private boolean shouldBeClear = false;
 
     @Around(value = "execution(* *..*Controller.*(..)))")
-    public Object collectTraceInfo(ProceedingJoinPoint joinPoint){
+    public Object collectTraceInfo(ProceedingJoinPoint joinPoint) throws Throwable {
         String filter = getFilter(joinPoint);
-        return null;
+        String traceId = getTraceId();
+        Object result = null;
+        try {
+            if (config.isPrintLog()){
+                long startTime = System.currentTimeMillis();
+                log.info("filter is {},requestId is {}", filter,traceId);
+                result = joinPoint.proceed();
+                log.info("耗时={}(ms), filter is {},requestId is {}", System.currentTimeMillis() - startTime,filter, filter,traceId);
+            }else {
+                result = joinPoint.proceed();
+            }
+        } finally {
+            clearTraceInfo(shouldBeClear);
+        }
+        return result;
+    }
+
+    /**
+     * 清除存储的TraceInfo
+     * @param shouldBeClear
+     */
+    private void clearTraceInfo(boolean shouldBeClear) {
+        if (shouldBeClear){
+            ThreadContext.remove(TRACE_ID_KEY);
+            ThreadContext.remove(FILTER_NAME_KEY);
+        }
     }
 
     /**
@@ -92,5 +124,20 @@ public class ControllerTraceInfoCollectAspect {
             }
         }
         return uri;
+    }
+
+    /**
+     * 获取traceId<br/>
+     * 如果traceId为空，则判断context中是否包含traeId：有则直接取，没有则生成
+     *
+     * @return
+     */
+    private String getTraceId() {
+        String traceId = ThreadContext.get(TRACE_ID_KEY);
+        if (StringUtils.isEmpty(traceId)) {
+            shouldBeClear = true;
+            traceId = UUID.randomUUID().toString().replaceAll("-", "");
+        }
+        return traceId;
     }
 }
