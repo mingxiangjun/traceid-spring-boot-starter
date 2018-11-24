@@ -35,6 +35,11 @@
             <artifactId>spring-boot-starter-log4j2</artifactId>
             <version>1.5.9.RELEASE</version>
         </dependency>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+            <version>3.1.0</version>
+        </dependency>
     </dependencies>
     <build>
         <plugins>
